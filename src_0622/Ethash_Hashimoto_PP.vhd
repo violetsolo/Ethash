@@ -30,8 +30,8 @@ USE altera_mf.altera_mf_components.all;
 
 entity Ethash_Hashimoto_PP is
 generic(
-	Device_Family	: string := "Stratix 10";--"Stratix 10";--"Cyclone V"
-	InnerRam_Deep	: Positive := 512; -- "Cyclone V": 128, "Stratix 10": 256
+	Device_Family	: string := "Cyclone V";--"Stratix 10";--"Cyclone V"
+	InnerRam_Deep	: Positive := 128; -- "Cyclone V": 128, "Stratix 10": 256
 	Size_Head		: Positive := 32;
 	Size_Nonce		: Positive := 8;
 	Size_cMix		: Positive := 32;
@@ -549,18 +549,22 @@ begin
 	if(aclr='1')then
 		sgn_FIFO_ID_Wr <= '0';
 	elsif(rising_edge(clk))then
-		sgn_FIFO_ID_Wr <= 
-			sgn_Ed when (sgn_ID_Init_Sel = '1') else -- recycle ID
-			sgn_ID_Init_Wr; -- initial ID
+		if(sgn_ID_Init_Sel = '1')then
+			sgn_FIFO_ID_Wr <= sgn_Ed; -- recycle ID
+		else
+			sgn_FIFO_ID_Wr <= sgn_ID_Init_Wr; -- initial ID
+		end if;
 	end if;
 end process;
 
 process(clk)
 begin
 	if(rising_edge(clk))then
-		sgn_FIFO_ID_Di <= 
-			sgn_ID_o when (sgn_ID_Init_Sel = '1') else -- recycle ID
-			sgn_ID_Init; -- initial ID
+		if(sgn_ID_Init_Sel = '1')then
+			sgn_FIFO_ID_Di <= sgn_ID_o; -- recycle ID
+		else
+			sgn_FIFO_ID_Di <= sgn_ID_Init; -- initial ID
+		end if;
 	end if;
 end process;
 

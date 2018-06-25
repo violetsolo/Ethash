@@ -31,8 +31,8 @@ constant gcst_FNVDL	: Positive := 3;
 constant gcst_AW		: Positive := 4; -- addr word number
 constant gcst_IDW		: Positive := 1; -- addr word number
 
-constant gAttribut_maxFanout	: Natural := 128;
-constant gcst_RegDupNum			: Natural := 8;
+constant gAttribut_maxFanout	: Natural := 64;
+constant gcst_MaxWidth_RamPort	: Natural := 64;
 --types
 
 type typ_Hash			is (e_Hash512, e_Hash256);

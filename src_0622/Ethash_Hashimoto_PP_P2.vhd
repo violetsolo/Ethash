@@ -81,6 +81,9 @@ constant cst_RamAddrWidth		: Positive := Fnc_Int2Wd(cst_RamSize-1);--(log2(128))
 constant cst_AccessNum_DAG		: Positive := 256; --DAG
 constant cst_AccessNum_H		: Positive := 64; -- hashimoto
 constant cst_Mux_nL				: Positive := 5; -- 32=2^5
+
+constant cst_RamMix_RegDupNum	: Positive := Size_Mix*gcst_WW/gcst_MaxWidth_RamPort;
+constant cst_RamS0_RegDupNum	: Positive := Size_S*gcst_WW/gcst_MaxWidth_RamPort;
 --======================== Altera component declare ========================--
 component scfifo
 generic (
@@ -199,18 +202,18 @@ signal sgn_Ram_Mix_Do			: std_logic_vector(Size_Mix*gcst_WW-1 downto 0);
 --signal sgn_Ram_Mix_wr_Addr		: std_logic_vector(cst_RamAddrWidth-1 downto 0);
 --signal sgn_Ram_Mix_wr			: std_logic;
 type typ_Rdup_RamAddr is array (natural range<>) of std_logic_vector(cst_RamAddrWidth-1 downto 0);
-signal sgn_Ram_Mix_rd_Addr		: typ_Rdup_RamAddr(gcst_RegDupNum-1 downto 0);
-signal sgn_Ram_Mix_wr_Addr		: typ_Rdup_RamAddr(gcst_RegDupNum-1 downto 0);
-signal sgn_Ram_Mix_wr			: std_logic_vector(gcst_RegDupNum-1 downto 0);
+signal sgn_Ram_Mix_rd_Addr		: typ_Rdup_RamAddr(cst_RamMix_RegDupNum-1 downto 0);
+signal sgn_Ram_Mix_wr_Addr		: typ_Rdup_RamAddr(cst_RamMix_RegDupNum-1 downto 0);
+signal sgn_Ram_Mix_wr			: std_logic_vector(cst_RamMix_RegDupNum-1 downto 0);
 
 signal sgn_Ram_S0_Di				: std_logic_vector(Size_S*gcst_WW-1 downto 0);
 signal sgn_Ram_S0_Do				: std_logic_vector(Size_S*gcst_WW-1 downto 0);
 --signal sgn_Ram_S0_rd_Addr		: std_logic_vector(cst_RamAddrWidth-1 downto 0);
 --signal sgn_Ram_S0_wr_Addr		: std_logic_vector(cst_RamAddrWidth-1 downto 0);
 --signal sgn_Ram_S0_wr				: std_logic;
-signal sgn_Ram_S0_rd_Addr			: typ_Rdup_RamAddr(cst_RamAddrWidth-1 downto 0);
-signal sgn_Ram_S0_wr_Addr			: typ_Rdup_RamAddr(cst_RamAddrWidth-1 downto 0);
-signal sgn_Ram_S0_wr				: std_logic_vector(gcst_RegDupNum-1 downto 0);
+signal sgn_Ram_S0_rd_Addr			: typ_Rdup_RamAddr(cst_RamS0_RegDupNum-1 downto 0);
+signal sgn_Ram_S0_wr_Addr			: typ_Rdup_RamAddr(cst_RamS0_RegDupNum-1 downto 0);
+signal sgn_Ram_S0_wr				: std_logic_vector(cst_RamS0_RegDupNum-1 downto 0);
 
 signal sgn_FIFO_Si_Di	: std_logic_vector((gcst_AW + gcst_AW + gcst_IDW) * gcst_WW-1 downto 0); -- S0 S0/j ID
 signal sgn_FIFO_Si_Wr	: std_logic;
@@ -358,7 +361,7 @@ begin
 end process;
 
 -- ram for mix(n-1)
-r0100: for i in 0 to gcst_RegDupNum-1 generate
+r0100: for i in 0 to cst_RamMix_RegDupNum-1 generate
 	inst00:altsyncram
 	generic map(
 		ram_block_type					=> "AUTO",--:	string := "AUTO";
@@ -380,23 +383,23 @@ r0100: for i in 0 to gcst_RegDupNum-1 generate
 		widthad_b						=> cst_RamAddrWidth,--:	natural := cst_RamAddrWidth; -- log2(128)
 		width_byteena_a					=> 1,--:	natural := 1
 
-		width_a		=> Size_Mix*gcst_WW/gcst_RegDupNum,--:	natural; -- 128
-		width_b		=> Size_Mix*gcst_WW/gcst_RegDupNum--:	natural;
+		width_a		=> gcst_MaxWidth_RamPort,--:	natural; -- 128
+		width_b		=> gcst_MaxWidth_RamPort--:	natural;
 	)
 	port map(
 		address_a	=> sgn_Ram_Mix_wr_Addr(i),--:	in std_logic_vector(widthad_a-1 downto 0);
-		data_a		=> sgn_Ram_Mix_Di((i+1)*Size_Mix*gcst_WW/gcst_RegDupNum-1 downto i*Size_Mix*gcst_WW/gcst_RegDupNum),--:	in std_logic_vector(width_a-1 downto 0);
+		data_a		=> sgn_Ram_Mix_Di((i+1)*gcst_MaxWidth_RamPort-1 downto i*gcst_MaxWidth_RamPort),--:	in std_logic_vector(width_a-1 downto 0);
 		wren_a		=> sgn_Ram_Mix_wr(i),--:	in std_logic;
 		
 		address_b	=> sgn_Ram_Mix_rd_Addr(i),--:	in std_logic_vector(widthad_b-1 downto 0);
-		q_b			=> sgn_Ram_Mix_Do((i+1)*Size_Mix*gcst_WW/gcst_RegDupNum-1 downto i*Size_Mix*gcst_WW/gcst_RegDupNum),--:	out std_logic_vector(width_b-1 downto 0);
+		q_b			=> sgn_Ram_Mix_Do((i+1)*gcst_MaxWidth_RamPort-1 downto i*gcst_MaxWidth_RamPort),--:	out std_logic_vector(width_b-1 downto 0);
 		
 		clock0		=> clk--:	in std_logic
 	);
 end generate r0100;
 
 -- ram for S0
-r0200: for i in 0 to gcst_RegDupNum-1 generate
+r0200: for i in 0 to cst_RamS0_RegDupNum-1 generate
 	inst02:altsyncram
 	generic map(
 		ram_block_type					=> "AUTO",--:	string := "AUTO";
@@ -418,16 +421,16 @@ r0200: for i in 0 to gcst_RegDupNum-1 generate
 		widthad_b						=> cst_RamAddrWidth,--:	natural := cst_RamAddrWidth; -- log2(128)
 		width_byteena_a					=> 1,--:	natural := 1
 
-		width_a		=> Size_S*gcst_WW/gcst_RegDupNum,--:	natural; -- 32
-		width_b		=> Size_S*gcst_WW/gcst_RegDupNum--:	natural;
+		width_a		=> gcst_MaxWidth_RamPort,--:	natural; -- 32
+		width_b		=> gcst_MaxWidth_RamPort--:	natural;
 	)
 	port map(
 		address_a	=> sgn_Ram_S0_wr_Addr(i),--:	in std_logic_vector(widthad_a-1 downto 0);
-		data_a		=> sgn_Ram_S0_Di((i+1)*Size_S*gcst_WW/gcst_RegDupNum-1 downto i*Size_S*gcst_WW/gcst_RegDupNum),--:	in std_logic_vector(width_a-1 downto 0);
+		data_a		=> sgn_Ram_S0_Di((i+1)*gcst_MaxWidth_RamPort-1 downto i*gcst_MaxWidth_RamPort),--:	in std_logic_vector(width_a-1 downto 0);
 		wren_a		=> sgn_Ram_S0_wr(i),--:	in std_logic;
 		
 		address_b	=> sgn_Ram_S0_rd_Addr(i),--:	in std_logic_vector(widthad_b-1 downto 0);
-		q_b			=> sgn_Ram_S0_Do((i+1)*Size_S*gcst_WW/gcst_RegDupNum-1 downto i*Size_S*gcst_WW/gcst_RegDupNum),--:	out std_logic_vector(width_b-1 downto 0);
+		q_b			=> sgn_Ram_S0_Do((i+1)*gcst_MaxWidth_RamPort-1 downto i*gcst_MaxWidth_RamPort),--:	out std_logic_vector(width_b-1 downto 0);
 		
 		clock0		=> clk--:	in std_logic
 	);
@@ -564,7 +567,7 @@ end process;
 process(clk) -- duplicate
 begin
 	if(rising_edge(clk))then
-		for i in 0 to gcst_RegDupNum-1 loop
+		for i in 0 to cst_RamMix_RegDupNum-1 loop
 			sgn_Ram_Mix_rd_Addr(i) <= Info_Ack.ID(cst_RamAddrWidth-1 downto 0);
 		end loop;
 	end if;
@@ -578,8 +581,8 @@ end generate i0100;
 process(clk) -- duplicate
 begin
 	if(rising_edge(clk))then
-		for i in 0 to gcst_RegDupNum-1 loop
-			sgn_Ram_S0_rd_Addr(i) <= sgn_InfoAck.ID(cst_RamAddrWidth-1 downto 0);
+		for i in 0 to cst_RamS0_RegDupNum-1 loop
+			sgn_Ram_S0_rd_Addr(i) <= Info_Ack.ID(cst_RamAddrWidth-1 downto 0);
 		end loop;
 	end if;
 end process;
@@ -658,7 +661,7 @@ end generate i0600;
 process(clk) -- duplicate
 begin
 	if(rising_edge(clk))then
-		for i in 0 to gcst_RegDupNum-1 loop
+		for i in 0 to cst_RamMix_RegDupNum-1 loop
 			sgn_Ram_Mix_wr_Addr(i) <= sgn_Info_ID_DL(cst_Info_ID_DL-1-1)(cst_RamAddrWidth-1 downto 0); -- DL4+1 = DL5
 		end loop;
 	end if;
@@ -672,7 +675,7 @@ begin
 	if(aclr = '1')then
 		sgn_Ram_Mix_wr <= (others => '0');
 	elsif(rising_edge(clk))then
-		for i in 0 to gcst_RegDupNum-1 loop
+		for i in 0 to cst_RamMix_RegDupNum-1 loop
 			sgn_Ram_Mix_wr(i) <= sgn_Lg3Trg_DL(1 + gcst_FNVDL - 1 - 1); -- DL3+1 = DL4
 		end loop;
 	end if;
@@ -721,7 +724,7 @@ sgn_FIFO_Mix0_Wr <= sgn_Lg3Trg_DL(cst_Lg3Trg_DL-1); -- DL9
 process(clk) -- duplicate
 begin
 	if(rising_edge(clk))then
-		for i in 0 to gcst_RegDupNum-1 loop
+		for i in 0 to cst_RamS0_RegDupNum-1 loop
 			sgn_Ram_S0_wr_Addr(i) <= ID_i(cst_RamAddrWidth-1 downto 0);
 		end loop;
 	end if;
@@ -735,7 +738,7 @@ begin
 	if(aclr='1')then
 		sgn_Ram_S0_wr <= (others => '0');
 	elsif(rising_edge(clk))then
-		for i in 0 to gcst_RegDupNum-1 loop
+		for i in 0 to cst_RamS0_RegDupNum-1 loop
 			sgn_Ram_S0_wr(i) <= St;
 		end loop;
 	end if;

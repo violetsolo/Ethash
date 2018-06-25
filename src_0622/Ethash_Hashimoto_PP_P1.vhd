@@ -81,6 +81,8 @@ constant cst_RamSize			: Positive := InnerRam_Deep;
 constant cst_RamAddrWidth	: Positive := Fnc_Int2Wd(cst_RamSize-1);--(log2(128))
 constant cst_HashNum_H		: Positive := Size_Head + Size_Nonce; -- 40
 constant cst_HashNum_DAG	: Positive := Size_S; --64
+
+constant cst_FIFOMix_RegDupNum	: Positive := Size_S * gcst_WW/gcst_MaxWidth_RamPort;
 --======================== Altera component declare ========================--
 component scfifo
 generic (
@@ -177,9 +179,9 @@ signal sgn_FIFO_Mix_Do			: std_logic_vector(Size_S * gcst_WW-1 downto 0);
 --signal sgn_FIFO_Mix_Wr			: std_logic;
 --signal sgn_FIFO_Mix_Rd			: std_logic;
 --signal sgn_FIFO_Mix_Emp			: std_logic;
-signal sgn_FIFO_Mix_Wr			: std_logic_vector(gcst_RegDupNum-1 downto 0);
-signal sgn_FIFO_Mix_Rd			: std_logic_vector(gcst_RegDupNum-1 downto 0);
-signal sgn_FIFO_Mix_Emp			: std_logic_vector(gcst_RegDupNum-1 downto 0);
+signal sgn_FIFO_Mix_Wr			: std_logic_vector(cst_FIFOMix_RegDupNum-1 downto 0);
+signal sgn_FIFO_Mix_Rd			: std_logic_vector(cst_FIFOMix_RegDupNum-1 downto 0);
+signal sgn_FIFO_Mix_Emp			: std_logic_vector(cst_FIFOMix_RegDupNum-1 downto 0);
 
 signal sgn_FIFO_DAG_ID_Di		: std_logic_vector(gcst_IDW * gcst_WW-1 downto 0);
 signal sgn_FIFO_DAG_ID_Wr		: std_logic;
@@ -375,7 +377,7 @@ port map(
 	aclr				=> aclr--: IN STD_LOGIC 
 );
 
-r0100: for i in 0 to gcst_RegDupNum-1 generate
+r0100: for i in 0 to cst_FIFOMix_RegDupNum-1 generate
 	inst04: scfifo
 	generic map(
 		ram_block_type				=> "AUTO",--:	string := "AUTO";
@@ -385,13 +387,13 @@ r0100: for i in 0 to gcst_RegDupNum-1 generate
 		LPM_NUMWORDS				=> cst_RamSize,--: NATURAL := cst_RamSize;
 		lpm_showahead				=> "OFF",--: STRING := "OFF";
 		LPM_WIDTHU					=> cst_RamAddrWidth,--: NATURAL := cst_RamAddrWidth; -- log2(128)
-		lpm_width					=> Size_S * gcst_WW/gcst_RegDupNum--: NATURAL; Mix from memory
+		lpm_width					=> gcst_MaxWidth_RamPort--: NATURAL; Mix from memory
 	)
 	port map(
-		data		=> sgn_FIFO_Mix_Di((i+1)*Size_S * gcst_WW/gcst_RegDupNum-1 downto i*Size_S * gcst_WW/gcst_RegDupNum),--: IN STD_LOGIC_VECTOR (lpm_width-1 DOWNTO 0);
+		data		=> sgn_FIFO_Mix_Di((i+1)*gcst_MaxWidth_RamPort-1 downto i*gcst_MaxWidth_RamPort),--: IN STD_LOGIC_VECTOR (lpm_width-1 DOWNTO 0);
 		wrreq		=> sgn_FIFO_Mix_Wr(i),--: IN STD_LOGIC ;
 
-		q			=> sgn_FIFO_Mix_Do((i+1)*Size_S * gcst_WW/gcst_RegDupNum-1 downto i*Size_S * gcst_WW/gcst_RegDupNum),--: OUT STD_LOGIC_VECTOR (lpm_width-1 DOWNTO 0);
+		q			=> sgn_FIFO_Mix_Do((i+1)*gcst_MaxWidth_RamPort-1 downto i*gcst_MaxWidth_RamPort),--: OUT STD_LOGIC_VECTOR (lpm_width-1 DOWNTO 0);
 		rdreq		=> sgn_FIFO_Mix_Rd(i),--: IN STD_LOGIC ;
 		
 		almost_full	=> open,--: OUT STD_LOGIC ;
@@ -622,7 +624,7 @@ begin
 	if(aclr = '1')then
 		sgn_FIFO_Mix_Wr <= (others => '0');
 	elsif(rising_edge(clk))then
-		for i in 0 to gcst_RegDupNum-1 loop
+		for i in 0 to cst_FIFOMix_RegDupNum-1 loop
 			sgn_FIFO_Mix_Wr(i) <= Mem_Ack and (not sgn_ModSel); -- from io 
 		end loop;
 	end if;
