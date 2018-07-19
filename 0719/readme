@@ -1,0 +1,3 @@
+fix some bug
+keep some signals and restrict bus width below 32bit, split big ram into small flake
+change object with which target compare and align delay path
